@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:15-alpine
+    container_name: kmrl-postgres
+    environment:
+      POSTGRES_DB: kmrl_documents
+      POSTGRES_USER: kmrl_user
+      POSTGRES_PASSWORD: kmrl_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+    networks:
+      - kmrl-network
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    container_name: kmrl-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - kmrl-network
+
+  # Next.js Web Application
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kmrl-web
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://kmrl_user:kmrl_password@postgres:5432/kmrl_documents
+      - REDIS_URL=redis://redis:6379
+      - NEXTAUTH_SECRET=your-secret-key-here
+      - NEXTAUTH_URL=http://localhost:3000
+      - GOOGLE_VISION_API_KEY=${GOOGLE_VISION_API_KEY}
+      - GOOGLE_TRANSLATE_API_KEY=${GOOGLE_TRANSLATE_API_KEY}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - kmrl-network
+    volumes:
+      - ./uploads:/app/uploads
+
+  # FastAPI Backend (Optional - for heavy AI processing)
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kmrl-api
+    environment:
+      - DATABASE_URL=postgresql://kmrl_user:kmrl_password@postgres:5432/kmrl_documents
+      - REDIS_URL=redis://redis:6379
+      - GOOGLE_VISION_API_KEY=${GOOGLE_VISION_API_KEY}
+      - GOOGLE_TRANSLATE_API_KEY=${GOOGLE_TRANSLATE_API_KEY}
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - kmrl-network
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: kmrl-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      - web
+      - api
+    networks:
+      - kmrl-network
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  kmrl-network:
+    driver: bridge
