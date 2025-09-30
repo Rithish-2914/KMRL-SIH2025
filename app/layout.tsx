@@ -3,9 +3,7 @@ import type { Metadata } from "next"
 import { GeistSans } from "geist/font/sans"
 import { GeistMono } from "geist/font/mono"
 import { Analytics } from "@vercel/analytics/next"
-import { ThemeProvider } from "@/components/theme-provider"
-import { AuthProvider } from "@/contexts/auth-context"
-import { Suspense } from "react"
+import { Providers } from "./Providers"
 import "./globals.css"
 
 export const metadata: Metadata = {
@@ -22,13 +20,9 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
-        <Suspense fallback={null}>
-          <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
-            <AuthProvider>
-              {children}
-            </AuthProvider>
-          </ThemeProvider>
-        </Suspense>
+        <Providers>
+          {children}
+        </Providers>
         <Analytics />
       </body>
     </html>
