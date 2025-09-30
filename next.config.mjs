@@ -16,6 +16,20 @@ const nextConfig = {
     }
     return config
   },
+  // Allow all hosts for Replit proxy - REQUIRED
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Access-Control-Allow-Origin',
+            value: '*',
+          },
+        ],
+      },
+    ]
+  },
 }
 
 export default nextConfig
