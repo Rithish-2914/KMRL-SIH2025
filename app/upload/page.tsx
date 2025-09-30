@@ -96,9 +96,26 @@ export default function UploadPage() {
           textContent = `Document type: ${fileData.file.type}, Name: ${fileData.file.name}`
         }
 
-        // Get user from localStorage (demo user for now)
+        // Get user from localStorage or use demo admin user
         const currentUser = typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
-        const userId = currentUser ? JSON.parse(currentUser).id : null
+        let userId = currentUser ? JSON.parse(currentUser).id : null
+        
+        // If no user in localStorage, fetch a demo user from API
+        if (!userId) {
+          try {
+            const usersResp = await fetch('/api/users')
+            if (usersResp.ok) {
+              const usersData = await usersResp.json()
+              if (usersData.data && usersData.data.length > 0) {
+                // Use the admin user if available, otherwise first user
+                const adminUser = usersData.data.find((u: any) => u.email === 'admin@kmrl.gov.in')
+                userId = adminUser ? adminUser.id : usersData.data[0].id
+              }
+            }
+          } catch (err) {
+            console.error('Failed to fetch users:', err)
+          }
+        }
 
         // Process with AI and save to database
         const processResponse = await fetch("/api/ai/process-document", {
