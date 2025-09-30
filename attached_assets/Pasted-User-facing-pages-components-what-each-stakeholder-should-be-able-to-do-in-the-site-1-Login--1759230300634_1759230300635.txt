@@ -1,0 +1,256 @@
+User-facing pages & components
+
+(what each stakeholder should be able to do in the site)
+
+1. Login / Auth
+
+Role-based login (Station Controller, Engineer, Finance, HR, Executive, Admin).
+
+SSO or basic government-email login mock (demo with sample accounts).
+
+Forgot password / basic account settings.
+and keep authentication with firebase with few mock logins
+2. Landing / Dashboard (role-specific)
+
+Snapshot cards: Top 3 actionable items (auto-generated).
+
+Quick filters: Today / Last 7 days / Department.
+
+KPI tiles: Docs processed, alerts sent, pending approvals.
+
+Recent activity stream (what changed, who acted).
+
+3. Document Upload / Ingestion
+
+Drag-and-drop upload (PDF, DOCX, images).
+
+Upload from URL (SharePoint/Maximo mock).
+
+Upload via email ingestion demo (show parsed attachments).
+
+Small progress bar + OCR status.
+
+4. Document List & Search
+
+Table/list view with columns: Title, Type, Date, Department tag, Summary snippet, Actionable flag, Source link.
+
+Full-text & semantic search (query box + suggested queries).
+
+Filters: Department, Date, Source, Language, Actionable/Non-actionable.
+
+5. Document Detail & Traceability
+
+Full-page view: original document viewer (PDF embed) + AI summary (top) + classification tags.
+
+Highlighted excerpts that triggered the summary (with confidence scores).
+
+“Show source” button that jumps to original page & highlighted sentence.
+
+Version history & upload metadata (uploader, timestamp, source).
+
+6. Role-Based “Snapshot” View
+
+Pre-built snapshot templates for: Engineer (maintenance highlights), Finance (invoices/payments), HR (policies/training), Executive (high-level risks & trends).
+
+Quick action buttons: “Assign to user”, “Create Task”, “Acknowledge”, “Request Full Doc”.
+
+7. Compliance & Alerts Page
+
+List of flagged regulatory documents with deadlines, impacted departments, and “Acknowledge / Escalate” actions.
+
+Calendar integration for deadlines & training reminders.
+
+Alert history (who was notified, when).
+
+8. Conversational Q&A (demo of RAG/chat)
+
+Chat box where users ask in English/Malayalam: “Show last safety circular” or “Any pending invoices > ₹1L?”.
+
+Shows retrieved excerpt + link to source doc.
+
+9. Tasks & Assignments
+
+Basic task board or list: tasks created from docs, with due dates and assignees.
+
+Notification badges.
+
+10. User Profile & Help
+
+Basic profile page, language preference (English / Malayalam).
+
+Quick user guide and sample queries.
+
+Admin / Operator features
+
+(what judges will inspect for governance & manageability)
+
+1. Admin Dashboard
+
+System health (ingestion rate, processing latency, queue sizes).
+
+Document throughput and accuracy metrics.
+
+2. Ingestion Monitor
+
+Queue view of uploaded docs, OCR status, failures, retry button.
+
+Ability to reprocess selected document.
+
+3. Model / Rules Management
+
+Simple UI to adjust classification tags and thresholds (no complex retraining in MVP).
+
+Upload sample training data (for demo).
+
+4. Roles & Permissions
+
+Create/edit roles and map access policies.
+
+Grant/revoke departmental access.
+
+5. Audit & Logs
+
+Immutable audit trail: Document processed, summary generated (timestamp, model id, user who viewed).
+
+Export logs for regulators.
+
+6. System Settings
+
+Language packs, API keys (masked), retention policy settings.
+
+Backend services & APIs (MVP list)
+
+(implement these as microservices or endpoints)
+
+Core services
+
+Ingestion Service
+
+Endpoints: /upload, /ingest/url, /ingest/email
+
+Jobs: store original, enqueue for OCR.
+
+Preprocessing Service
+
+OCR (Tesseract/Google Vision), image cleanup, language detection.
+
+NLP / AI Engine
+
+Summarization endpoint: /summarize/{doc_id}
+
+Classification endpoint: /classify/{doc_id}
+
+Embedding generation: /embed/{doc_id/text}
+
+Search Service
+
+Semantic & keyword search: /search?q= (FAISS/Weaviate backed).
+
+Notification / Alerts Service
+
+Push alerts: email/SMS (mock), in-app notification.
+
+User & Auth Service
+
+RBAC enforcement, token issuance.
+
+Traceability & Audit Service
+
+Store mapping: summary_sentence -> doc_id -> page_no -> line_offset.
+
+Sample API contract snippets 
+Integrations (demo & future)
+
+SharePoint API 
+
+Maximo exports (CSV/JSON ingestion).
+
+Email parser (IMAP demo with a seeded inbox).
+
+Regulatory RSS/Feed ingestion for automated alerting.
+
+Calendar (Google Calendar / Outlook) or local calendar for deadlines.
+
+Security, privacy & compliance (must-have)
+
+Role-Based Access Control (RBAC).
+
+TLS for all endpoints, AES-256 at rest for documents in database.
+
+On-premise deployment option (mention in demo).
+
+Audit logs for every summary & access event.
+
+Data retention and purge settings for sensitive documents.
+
+Consent / Acceptable Use banner for demo upload.
+
+UX / Demo polish (what impresses judges)
+
+Show one polished end-to-end demo flow: upload → OCR → summary → role snapshot → compliance alert → chat query (in < 3 minutes).
+
+Use realistic sample docs: an engineering drawing PDF, a safety circular, a vendor invoice, a bilingual policy doc.
+
+Provide English + Malayalam examples to demonstrate bilingual capability.
+
+Visual indicators for confidence (e.g., summary confidence %).
+
+Clear “Open Source / Original Document” link to show traceability.
+
+Performance & metrics to display
+
+Average processing time per document (OCR + summarization).
+
+Accuracy approximations (precision/recall for classification) — even sample/estimated.
+
+Throughput: docs/hour processed in demo.
+
+Alert latency: time from regulatory doc ingestion to stakeholder notification.
+
+Testing & acceptance checklist (demo-ready)
+
+ Login & RBAC works for at least 3 roles.
+
+ Upload and OCR works for 4 document types (PDF, image, DOCX, email attachment).
+
+ Summaries generated and stored; clicking “open source” shows original page with highlighted excerpt.
+
+ Semantic search returns relevant docs for sample queries.
+
+ Compliance alert fires and appears in user dashboards.
+
+ Chat returns answer with source references (RAG demonstration).
+
+ Admin can reprocess a document and view logs.
+
+ App remains responsive (demo scale) and shows processing metrics.
+
+Minimal tech/deployment notes (practical)
+
+Containerize services with Docker; orchestrate with docker-compose for demo.
+
+Use SQLite/Postgres for demo DB; switch to managed DB in production.
+
+Use FAISS local index for embeddings in hackathon; plan Weaviate for production.
+
+Host demo on a single VM (or local laptop) — keep data on-prem for security.
+
+Seed the demo with a small corpus of KMRL-like documents.
+
+Bonus: Demo script (90–120 seconds)
+
+Login as Station Controller.
+
+Upload “Incident_Report_Kochi.pdf”.
+
+Show auto-generated 5-line summary + tag “Rolling Stock.”
+
+Click “Acknowledge” → create task for maintenance team.
+
+Switch to Compliance page → show newly ingested CMRS directive and auto-alert to HR.
+
+Ask chat: “Show last safety directives” in Malayalam — show result.
+
+Admin view: show ingestion queue & audit log.
+
+End with KPI: “Processed 12 docs in 7 minutes; average summary time = 28s.”

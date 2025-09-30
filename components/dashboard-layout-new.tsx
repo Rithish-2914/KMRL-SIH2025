@@ -39,6 +39,7 @@ import {
   LayoutDashboard,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { getRoleDashboardPath } from "@/lib/auth"
 
 interface DashboardLayoutProps {
   children: React.ReactNode
@@ -72,7 +73,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
     { name: "Admin Dashboard", nameML: "അഡ്മിൻ ഡാഷ്ബോർഡ്", href: "/admin", icon: Shield },
     { name: "Ingestion Monitor", nameML: "ഇൻജെസ്ഷൻ മോണിറ്റർ", href: "/admin/ingestion", icon: Upload },
     { name: "Users & Roles", nameML: "ഉപയോക്താക്കൾ", href: "/admin/users", icon: Users },
-    { name: "Audit Logs", nameML: "ഓഡിറ്റ് ലോഗുകൾ", href: "/admin/audit", icon: AlertTriangle },
+    { name: "Audit Logs", nameML: "ഓഡിറ്റ് ലോഗുകൾ", href: "/admin/audit-logs", icon: AlertTriangle },
     { name: "Settings", nameML: "ക്രമീകരണങ്ങൾ", href: "/admin/settings", icon: Settings },
   ]
 

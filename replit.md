@@ -10,6 +10,14 @@ A comprehensive bilingual (English/Malayalam) document management system for Koc
 - **AI Services**: OpenAI GPT-4, Google Vision API, Google Translate API
 
 ## Recent Changes
+- **2025-09-30 (Latest)**: Completed missing features from specification
+  - Created document detail page with AI summary, highlighted excerpts, metadata, and version history
+  - Created admin audit logs page with comprehensive event tracking and filtering
+  - Fixed runtime error in dashboard-layout-new.tsx (getRoleDashboardPath import)
+  - Added ProtectedRoute security to document detail page
+  - Implemented button handlers for Download, View Original, and Show Source
+  - Fixed admin menu routing mismatch for audit logs page
+  
 - **2025-09-30**: Successfully imported from GitHub and configured for Replit environment
   - Configured Next.js dev server to run on port 5000 with host 0.0.0.0
   - Set up development workflow for hot reload
@@ -32,6 +40,7 @@ A comprehensive bilingual (English/Malayalam) document management system for Koc
   - **Document Management**: 
     - Multi-source upload (file, camera, email, SharePoint)
     - Document listing with grid/list views
+    - Document detail page with PDF viewer placeholder, AI summary, and traceability
     - Advanced search and filters
     - Document classification and status tracking
   - **Compliance & Alerts**: Regulatory document tracking with deadlines
@@ -42,6 +51,11 @@ A comprehensive bilingual (English/Malayalam) document management system for Koc
     - OCR and text extraction
     - English ↔ Malayalam translation
   - **Analytics**: Dashboard metrics and knowledge graph visualization
+  - **Admin Features**:
+    - User and role management
+    - Audit logs with comprehensive event tracking
+    - Ingestion monitor (workflow management)
+    - System settings
   - **Notifications**: In-app notification system
   - **Mobile Support**: PWA with camera integration for document capture
   - **Bilingual**: Full English/Malayalam support throughout
@@ -110,5 +124,7 @@ Configured for Replit Autoscale deployment:
 - None set yet
 
 ## Known Issues
+- **Security**: Document files currently use mock public paths - in production, these should be served via authenticated API routes with permission checks to prevent unauthorized access
+- **PDF Viewer**: Document detail page has PDF viewer placeholder - production implementation should use PDF.js or react-pdf for embedded viewing
 - Minor React ref warnings in Button component (non-blocking)
 - TypeScript errors in `lib/ai-services.ts` are suppressed in build config
