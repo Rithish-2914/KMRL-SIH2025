@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { aiServices } from "@/lib/ai-services"
+import { db } from "@/lib/db"
 
 // Free fallback processor for when OpenAI is unavailable
 function processFallback(text: string, title: string, language: "en" | "ml") {
@@ -176,6 +177,76 @@ export async function POST(request: NextRequest) {
     const dueDate = new Date()
     dueDate.setDate(dueDate.getDate() + deadlineDays)
 
+    // Get department ID by code
+    const department = await db.getDepartmentByCode(suggestedDepartment);
+    const departmentId = department?.id;
+
+    // Save document to database if we have file info
+    let savedDocument = null;
+    if (body.filePath && body.fileName && body.userId) {
+      try {
+        savedDocument = await db.createDocument({
+          title: documentTitle,
+          malayalam_title: body.malayalam_title,
+          description: summaryResult.summary,
+          file_path: body.filePath,
+          file_name: body.fileName,
+          file_size: body.fileSize,
+          mime_type: body.mimeType || fileType,
+          language: language,
+          source_type: body.sourceType || 'upload',
+          category_code: classificationResult.suggested_category,
+          department_id: departmentId,
+          uploaded_by: body.userId,
+          status: 'classified',
+          priority: priority,
+          due_date: dueDate.toISOString()
+        });
+
+        // Save document analysis
+        if (savedDocument) {
+          await db.createDocumentAnalysis({
+            document_id: savedDocument.id,
+            summary: summaryResult.summary,
+            malayalam_summary: summaryResult.malayalam_summary,
+            keywords: summaryResult.keywords,
+            malayalam_keywords: summaryResult.malayalam_keywords,
+            sentiment: summaryResult.sentiment,
+            urgency_score: summaryResult.urgency_score,
+            auto_category_suggestion: classificationResult.suggested_category,
+            confidence_score: classificationResult.confidence_score
+          });
+
+          // Create document route to department
+          if (departmentId) {
+            await db.createDocumentRoute({
+              document_id: savedDocument.id,
+              from_user_id: body.userId,
+              to_department_id: departmentId,
+              action: 'route',
+              comments: `Auto-routed to ${suggestedDepartment} department based on AI classification`,
+              status: 'pending'
+            });
+          }
+
+          // Create audit log
+          await db.createAuditLog({
+            user_id: body.userId,
+            document_id: savedDocument.id,
+            action: 'document_created',
+            details: {
+              category: classificationResult.suggested_category,
+              department: suggestedDepartment,
+              priority: priority,
+              ai_confidence: classificationResult.confidence_score
+            }
+          });
+        }
+      } catch (dbError) {
+        console.error("Database save error:", dbError);
+      }
+    }
+
     // Prepare comprehensive response (supporting both old and new format)
     const processedData = {
       // New format
@@ -206,17 +277,22 @@ export async function POST(request: NextRequest) {
       deadline: dueDate.toISOString().split('T')[0],
       confidence_score: classificationResult.confidence_score,
       
+      // Saved document info
+      document_id: savedDocument?.id,
+      department_id: departmentId,
+      
       processing_metadata: {
         processed_at: new Date().toISOString(),
         language,
-        document_id,
+        document_id: savedDocument?.id || document_id,
         processing_steps: [
           "text_extraction",
           "summarization",
           "keyword_extraction",
           "classification",
           "department_routing",
-          "deadline_assignment"
+          "deadline_assignment",
+          "database_save"
         ]
       }
     }

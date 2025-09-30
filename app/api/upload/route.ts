@@ -2,11 +2,14 @@ import { type NextRequest, NextResponse } from "next/server"
 import { writeFile, mkdir } from "fs/promises"
 import { join } from "path"
 import { existsSync } from "fs"
+import { db } from "@/lib/db"
 
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
     const files = formData.getAll("files") as File[]
+    const userId = formData.get("userId") as string || "00000000-0000-0000-0000-000000000000"
+    const sourceType = formData.get("sourceType") as string || "upload"
     
     if (!files || files.length === 0) {
       return NextResponse.json({ 
@@ -52,11 +55,8 @@ export async function POST(request: NextRequest) {
       if (fileType.includes("text")) {
         textContent = buffer.toString("utf-8")
       } else if (fileType.includes("pdf")) {
-        // For PDFs, you'd use a PDF parser library
-        // For now, we'll use a placeholder
         textContent = `[PDF content from ${file.name}]`
       } else if (fileType.includes("image")) {
-        // For images, you'd use OCR
         textContent = `[Image content from ${file.name} - OCR processing needed]`
       } else {
         textContent = `[Content from ${file.name}]`

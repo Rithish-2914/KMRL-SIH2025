@@ -96,7 +96,11 @@ export default function UploadPage() {
           textContent = `Document type: ${fileData.file.type}, Name: ${fileData.file.name}`
         }
 
-        // Process with AI
+        // Get user from localStorage (demo user for now)
+        const currentUser = typeof window !== 'undefined' ? localStorage.getItem('currentUser') : null
+        const userId = currentUser ? JSON.parse(currentUser).id : null
+
+        // Process with AI and save to database
         const processResponse = await fetch("/api/ai/process-document", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -105,6 +109,13 @@ export default function UploadPage() {
             title: fileData.file.name,
             fileType: fileData.file.type,
             language,
+            // Additional info for database saving
+            filePath: uploadedFile.file_path,
+            fileName: uploadedFile.original_name,
+            fileSize: uploadedFile.file_size,
+            mimeType: uploadedFile.mime_type,
+            userId: userId,
+            sourceType: 'upload'
           }),
         })
 
