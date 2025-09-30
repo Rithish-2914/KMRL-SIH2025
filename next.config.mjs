@@ -16,6 +16,9 @@ const nextConfig = {
     }
     return config
   },
+  experimental: {
+    allowedOrigins: ['*'],
+  },
   // Allow all hosts for Replit proxy - REQUIRED
   async headers() {
     return [
@@ -25,6 +28,10 @@ const nextConfig = {
           {
             key: 'Access-Control-Allow-Origin',
             value: '*',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'no-cache, no-store, must-revalidate',
           },
         ],
       },
