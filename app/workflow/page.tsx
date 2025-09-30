@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -11,58 +11,39 @@ import { Clock, CheckCircle, AlertTriangle, ArrowRight, FileText, MessageSquare 
 
 export default function WorkflowPage() {
   const [language, setLanguage] = useState<"en" | "ml">("en")
+  const [workflows, setWorkflows] = useState<any[]>([])
+  const [stats, setStats] = useState({ total: 0, active: 0, pending: 0, overdue: 0, completed: 0 })
+  const [isLoading, setIsLoading] = useState(true)
 
-  const workflows = [
-    {
-      id: "1",
-      title: language === "en" ? "Safety Protocol Review" : "സുരക്ഷാ പ്രോട്ടോക്കോൾ അവലോകനം",
-      document: "safety-protocol-001.pdf",
-      status: "in_progress",
-      priority: "high",
-      assignee: "Safety Officer",
-      dueDate: "2024-01-20",
-      progress: 60,
-      steps: [
-        { name: language === "en" ? "Document Upload" : "രേഖ അപ്‌ലോഡ്", status: "completed" },
-        { name: language === "en" ? "AI Classification" : "AI വർഗ്ഗീകരണം", status: "completed" },
-        { name: language === "en" ? "Safety Review" : "സുരക്ഷാ അവലോകനം", status: "in_progress" },
-        { name: language === "en" ? "Management Approval" : "മാനേജ്മെന്റ് അംഗീകാരം", status: "pending" },
-        { name: language === "en" ? "Implementation" : "നടപ്പാക്കൽ", status: "pending" },
-      ],
-    },
-    {
-      id: "2",
-      title: language === "en" ? "Budget Allocation Review" : "ബജറ്റ് വിഹിതം അവലോകനം",
-      document: "budget-allocation-2024.pdf",
-      status: "pending",
-      priority: "urgent",
-      assignee: "Finance Manager",
-      dueDate: "2024-01-18",
-      progress: 25,
-      steps: [
-        { name: language === "en" ? "Document Upload" : "രേഖ അപ്‌ലോഡ്", status: "completed" },
-        { name: language === "en" ? "Financial Review" : "സാമ്പത്തിക അവലോകനം", status: "in_progress" },
-        { name: language === "en" ? "Department Approval" : "വകുപ്പ് അംഗീകാരം", status: "pending" },
-        { name: language === "en" ? "Final Approval" : "അന്തിമ അംഗീകാരം", status: "pending" },
-      ],
-    },
-    {
-      id: "3",
-      title: language === "en" ? "Training Schedule Update" : "പരിശീലന ഷെഡ്യൂൾ അപ്ഡേറ്റ്",
-      document: "training-schedule-q1-2024.xlsx",
-      status: "completed",
-      priority: "medium",
-      assignee: "HR Manager",
-      dueDate: "2024-01-15",
-      progress: 100,
-      steps: [
-        { name: language === "en" ? "Document Upload" : "രേഖ അപ്‌ലോഡ്", status: "completed" },
-        { name: language === "en" ? "HR Review" : "HR അവലോകനം", status: "completed" },
-        { name: language === "en" ? "Department Coordination" : "വകുപ്പ് ഏകോപനം", status: "completed" },
-        { name: language === "en" ? "Schedule Publication" : "ഷെഡ്യൂൾ പ്രസിദ്ധീകരണം", status: "completed" },
-      ],
-    },
-  ]
+  useEffect(() => {
+    fetchWorkflows()
+  }, [])
+
+  const fetchWorkflows = async () => {
+    try {
+      const response = await fetch('/api/workflows')
+      const data = await response.json()
+      
+      if (data.success) {
+        setWorkflows(data.data.workflows)
+        setStats(data.data.stats)
+      }
+    } catch (error) {
+      console.error('Error fetching workflows:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const translateStepName = (name: string) => {
+    const translations: Record<string, string> = {
+      'Document Upload': 'രേഖ അപ്‌ലോഡ്',
+      'AI Classification': 'AI വർഗ്ഗീകരണം',
+      'Department Review': 'വകുപ്പ് അവലോകനം',
+      'Approval': 'അംഗീകാരം'
+    }
+    return language === "ml" && translations[name] ? translations[name] : name
+  }
 
   const getStatusColor = (status: string) => {
     const colors = {
@@ -123,7 +104,7 @@ export default function WorkflowPage() {
                   <FileText className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">12</p>
+                  <p className="text-2xl font-bold">{stats.active}</p>
                   <p className="text-sm text-muted-foreground">
                     {language === "en" ? "Active Workflows" : "സജീവ വർക്ക്ഫ്ലോകൾ"}
                   </p>
@@ -138,7 +119,7 @@ export default function WorkflowPage() {
                   <Clock className="h-6 w-6 text-yellow-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">3</p>
+                  <p className="text-2xl font-bold">{stats.pending}</p>
                   <p className="text-sm text-muted-foreground">
                     {language === "en" ? "Pending Approval" : "അംഗീകാരത്തിനായി"}
                   </p>
@@ -153,7 +134,7 @@ export default function WorkflowPage() {
                   <AlertTriangle className="h-6 w-6 text-red-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">2</p>
+                  <p className="text-2xl font-bold">{stats.overdue}</p>
                   <p className="text-sm text-muted-foreground">{language === "en" ? "Overdue" : "കാലാവധി കഴിഞ്ഞത്"}</p>
                 </div>
               </div>
@@ -166,7 +147,7 @@ export default function WorkflowPage() {
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">45</p>
+                  <p className="text-2xl font-bold">{stats.completed}</p>
                   <p className="text-sm text-muted-foreground">{language === "en" ? "Completed" : "പൂർത്തിയായി"}</p>
                 </div>
               </div>
@@ -176,12 +157,26 @@ export default function WorkflowPage() {
 
         {/* Active Workflows */}
         <div className="space-y-4">
+          {isLoading && (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p>{language === "en" ? "Loading workflows..." : "വർക്ക്ഫ്ലോകൾ ലോഡ് ചെയ്യുന്നു..."}</p>
+              </CardContent>
+            </Card>
+          )}
+          {!isLoading && workflows.length === 0 && (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p>{language === "en" ? "No workflows found" : "വർക്ക്ഫ്ലോകൾ കണ്ടെത്തിയില്ല"}</p>
+              </CardContent>
+            </Card>
+          )}
           {workflows.map((workflow) => (
             <Card key={workflow.id}>
               <CardHeader>
                 <div className="flex items-start justify-between">
                   <div className="space-y-2">
-                    <CardTitle className="text-lg">{workflow.title}</CardTitle>
+                    <CardTitle className="text-lg">{language === "ml" && workflow.malayalam_title ? workflow.malayalam_title : workflow.title}</CardTitle>
                     <div className="flex items-center gap-2 text-sm text-muted-foreground">
                       <FileText className="h-4 w-4" />
                       <span>{workflow.document}</span>
@@ -211,13 +206,13 @@ export default function WorkflowPage() {
                 <div className="space-y-3">
                   <h4 className="font-medium">{language === "en" ? "Workflow Steps" : "വർക്ക്ഫ്ലോ ഘട്ടങ്ങൾ"}</h4>
                   <div className="space-y-2">
-                    {workflow.steps.map((step, index) => (
+                    {workflow.steps.map((step: any, index: number) => (
                       <div key={index} className="flex items-center gap-3">
                         {getStepStatusIcon(step.status)}
                         <span
                           className={`text-sm ${step.status === "completed" ? "text-muted-foreground line-through" : ""}`}
                         >
-                          {step.name}
+                          {translateStepName(step.name)}
                         </span>
                         {index < workflow.steps.length - 1 && step.status === "completed" && (
                           <ArrowRight className="h-3 w-3 text-muted-foreground" />

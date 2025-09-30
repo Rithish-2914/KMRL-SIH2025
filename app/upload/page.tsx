@@ -207,13 +207,34 @@ export default function UploadPage() {
         {/* Upload Methods */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {uploadMethods[language].map((method, index) => (
-            <Card key={index} className="cursor-pointer hover:shadow-md transition-shadow">
+            <Card 
+              key={index} 
+              className="cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => {
+                if (index === 0) {
+                  document.getElementById('file-upload')?.click()
+                } else {
+                  const featureNames = {
+                    1: language === "en" ? "Camera Capture" : "ക്യാമറ ക്യാപ്ചർ",
+                    2: language === "en" ? "Email Integration" : "ഇമെയിൽ ഇന്റഗ്രേഷൻ",
+                    3: language === "en" ? "SharePoint Integration" : "ഷെയർപോയിന്റ് ഇന്റഗ്രേഷൻ"
+                  }
+                  const message = language === "en" 
+                    ? `${featureNames[index as 1|2|3]} requires additional configuration. Please contact your administrator.`
+                    : `${featureNames[index as 1|2|3]} അധിക കോൺഫിഗറേഷൻ ആവശ്യമാണ്. നിങ്ങളുടെ അഡ്മിനിസ്ട്രേറ്ററെ ബന്ധപ്പെടുക.`
+                  alert(message)
+                }
+              }}
+            >
               <CardContent className="p-6 text-center">
                 <div className={`w-12 h-12 ${method.color} rounded-lg flex items-center justify-center mx-auto mb-4`}>
                   <method.icon className="h-6 w-6 text-white" />
                 </div>
                 <h3 className="font-semibold mb-2">{method.title}</h3>
                 <p className="text-sm text-muted-foreground text-pretty">{method.description}</p>
+                {index !== 0 && (
+                  <p className="text-xs text-orange-600 mt-2">{language === "en" ? "Requires setup" : "സജ്ജീകരണം ആവശ്യമാണ്"}</p>
+                )}
               </CardContent>
             </Card>
           ))}

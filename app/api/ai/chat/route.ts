@@ -1,10 +1,38 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { aiServices } from "@/lib/ai-services"
-import { DatabaseService } from "@/lib/database"
+import { db } from "@/lib/db"
 
 // Fallback chat responses when AI is unavailable
-function getFallbackResponse(query: string, language: "en" | "ml") {
+function getFallbackResponse(query: string, language: "en" | "ml", relevantDocs: any[] = []) {
   const lowerQuery = query.toLowerCase()
+
+  // If we have relevant documents, provide specific information
+  if (relevantDocs.length > 0) {
+    const doc = relevantDocs[0]
+    const title = language === "ml" && doc.malayalam_title ? doc.malayalam_title : doc.title
+    const summary = doc.description || "No summary available"
+    
+    let response = `Found document: "${title}".`
+    
+    if (doc.status) {
+      response += ` Status: ${doc.status}.`
+    }
+    if (doc.priority) {
+      response += ` Priority: ${doc.priority}.`
+    }
+    if (doc.due_date) {
+      const dueDate = new Date(doc.due_date).toLocaleDateString()
+      response += ` Deadline: ${dueDate}.`
+    }
+    if (doc.department_id) {
+      response += ` Assigned to department.`
+    }
+    if (summary) {
+      response += ` ${summary}`
+    }
+    
+    return response
+  }
 
   if (lowerQuery.includes("safety") || lowerQuery.includes("സുരക്ഷ")) {
     return language === "ml"
@@ -35,7 +63,7 @@ function getFallbackResponse(query: string, language: "en" | "ml") {
     : "I'm the KMRL Document Assistant. I can help with documents, policies, procedures, uploads, and departmental routing."
 }
 
-// POST /api/ai/chat - AI chatbot for document Q&A
+// POST /api/ai/chat - AI chatbot for document Q&A with real database integration
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
@@ -45,45 +73,91 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Query is required" }, { status: 400 })
     }
 
-    // Get relevant document context
+    // Get relevant document context from real database
     let documentContext: string[] = []
+    let sources: any[] = []
+    let relevantDocs: any[] = []
 
     if (document_ids.length > 0) {
       // Fetch specific documents
       for (const docId of document_ids) {
-        const document = await DatabaseService.getDocumentById(docId)
+        const document = await db.getDocumentById(docId)
         if (document) {
+          const analysis = await db.getDocumentAnalysis(docId)
+          const routes = await db.getDocumentRoutes(docId)
+          
           const title = language === "ml" && document.malayalam_title ? document.malayalam_title : document.title
-          const description =
-            language === "ml" && document.malayalam_description
-              ? document.malayalam_description
-              : document.description || ""
-
-          documentContext.push(`${title}\n${description}`)
+          const summary = analysis?.summary || document.description || ""
+          const malayalamSummary = analysis?.malayalam_summary || ""
+          
+          const deptInfo = routes.length > 0 ? `Routed to department. ` : ""
+          const deadlineInfo = document.due_date ? `Deadline: ${new Date(document.due_date).toLocaleDateString()}. ` : ""
+          const priorityInfo = document.priority ? `Priority: ${document.priority}. ` : ""
+          
+          const contextText = `Document: ${title}\n${deptInfo}${deadlineInfo}${priorityInfo}${language === "ml" && malayalamSummary ? malayalamSummary : summary}`
+          documentContext.push(contextText)
+          
+          relevantDocs.push(document)
+          sources.push({
+            document_id: document.id,
+            title: title,
+            relevance_score: 1.0,
+            excerpt: summary.substring(0, 150) + "..."
+          })
         }
       }
     } else {
-      // Search for relevant documents based on query
-      const searchResults = await DatabaseService.searchDocuments(query, language)
-      documentContext = searchResults.slice(0, 3).map((doc) => {
+      // Search for relevant documents based on query keywords
+      const searchKeywords = query.toLowerCase().split(' ').filter(word => word.length > 3)
+      const allDocs = await db.getDocuments({ limit: 50 })
+      
+      // Simple keyword matching for document search
+      const scoredDocs = allDocs.map(doc => {
+        const docText = `${doc.title} ${doc.description || ''}`.toLowerCase()
+        const score = searchKeywords.reduce((acc, keyword) => {
+          return acc + (docText.includes(keyword) ? 1 : 0)
+        }, 0)
+        return { doc, score }
+      }).filter(item => item.score > 0)
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 3)
+      
+      for (const { doc } of scoredDocs) {
+        const analysis = await db.getDocumentAnalysis(doc.id)
+        const routes = await db.getDocumentRoutes(doc.id)
+        
         const title = language === "ml" && doc.malayalam_title ? doc.malayalam_title : doc.title
-        const description =
-          language === "ml" && doc.malayalam_description ? doc.malayalam_description : doc.description || ""
-
-        return `${title}\n${description}`
-      })
+        const summary = analysis?.summary || doc.description || ""
+        const malayalamSummary = analysis?.malayalam_summary || ""
+        
+        const deptInfo = routes.length > 0 ? `Routed to department. ` : ""
+        const deadlineInfo = doc.due_date ? `Deadline: ${new Date(doc.due_date).toLocaleDateString()}. ` : ""
+        const priorityInfo = doc.priority ? `Priority: ${doc.priority}. ` : ""
+        
+        const contextText = `Document: ${title}\n${deptInfo}${deadlineInfo}${priorityInfo}${language === "ml" && malayalamSummary ? malayalamSummary : summary}`
+        documentContext.push(contextText)
+        
+        relevantDocs.push(doc)
+        sources.push({
+          document_id: doc.id,
+          title: title,
+          relevance_score: 0.8,
+          excerpt: summary.substring(0, 150) + "..."
+        })
+      }
     }
 
     let chatResponse
     try {
       chatResponse = await aiServices.chatWithDocuments(query, documentContext, language)
+      chatResponse.sources = sources
     } catch (aiError) {
-      console.log("AI chat unavailable, using fallback responses")
-      const fallbackResponse = getFallbackResponse(query, language)
+      console.log("AI chat unavailable, using fallback responses with real document data")
+      const fallbackResponse = getFallbackResponse(query, language, relevantDocs)
       chatResponse = {
         response: fallbackResponse,
         malayalam_response: language === "ml" ? fallbackResponse : undefined,
-        sources: [],
+        sources: sources,
         confidence_score: 0.7
       }
     }
@@ -94,6 +168,10 @@ export async function POST(request: NextRequest) {
     })
   } catch (error) {
     console.error("Error in AI chat:", error)
-    return NextResponse.json({ success: false, error: "AI chat failed" }, { status: 500 })
+    return NextResponse.json({ 
+      success: false, 
+      error: "AI chat failed",
+      details: error instanceof Error ? error.message : "Unknown error"
+    }, { status: 500 })
   }
 }

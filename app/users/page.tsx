@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -14,56 +14,33 @@ export default function UsersPage() {
   const [language, setLanguage] = useState<"en" | "ml">("en")
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState<string>("all")
+  const [users, setUsers] = useState<any[]>([])
+  const [isLoading, setIsLoading] = useState(true)
 
-  const users = [
-    {
-      id: "1",
-      name: "Rajesh Kumar",
-      email: "rajesh.kumar@kmrl.gov.in",
-      phone: "+91 9876543210",
-      role: "admin",
-      department: "Operations",
-      status: "active",
-      last_login: "2024-01-15T10:30:00Z",
-    },
-    {
-      id: "2",
-      name: "Priya Nair",
-      email: "priya.nair@kmrl.gov.in",
-      phone: "+91 9876543211",
-      role: "manager",
-      department: "Safety",
-      status: "active",
-      last_login: "2024-01-14T16:45:00Z",
-    },
-    {
-      id: "3",
-      name: "Mohammed Ali",
-      email: "mohammed.ali@kmrl.gov.in",
-      phone: "+91 9876543212",
-      role: "user",
-      department: "Engineering",
-      status: "active",
-      last_login: "2024-01-13T09:15:00Z",
-    },
-    {
-      id: "4",
-      name: "Lakshmi Menon",
-      email: "lakshmi.menon@kmrl.gov.in",
-      phone: "+91 9876543213",
-      role: "user",
-      department: "HR",
-      status: "inactive",
-      last_login: "2024-01-10T14:20:00Z",
-    },
-  ]
+  useEffect(() => {
+    fetchUsers()
+  }, [])
+
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('/api/users')
+      const data = await response.json()
+      
+      if (data.success) {
+        setUsers(data.data)
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const filteredUsers = users.filter((user) => {
     const matchesSearch =
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.department.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesRole = roleFilter === "all" || user.role === roleFilter
+      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesRole = roleFilter === "all" || user.role.toLowerCase() === roleFilter.toLowerCase()
     return matchesSearch && matchesRole
   })
 
@@ -125,7 +102,7 @@ export default function UsersPage() {
                   <Users className="h-6 w-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">156</p>
+                  <p className="text-2xl font-bold">{users.length}</p>
                   <p className="text-sm text-muted-foreground">
                     {language === "en" ? "Total Users" : "മൊത്തം ഉപയോക്താക്കൾ"}
                   </p>
@@ -140,7 +117,7 @@ export default function UsersPage() {
                   <User className="h-6 w-6 text-green-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">142</p>
+                  <p className="text-2xl font-bold">{users.length}</p>
                   <p className="text-sm text-muted-foreground">
                     {language === "en" ? "Active Users" : "സജീവ ഉപയോക്താക്കൾ"}
                   </p>
@@ -155,7 +132,7 @@ export default function UsersPage() {
                   <Shield className="h-6 w-6 text-red-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">8</p>
+                  <p className="text-2xl font-bold">{users.filter(u => u.role.toLowerCase() === 'admin').length}</p>
                   <p className="text-sm text-muted-foreground">
                     {language === "en" ? "Administrators" : "അഡ്മിനിസ്ട്രേറ്റർമാർ"}
                   </p>
@@ -170,9 +147,9 @@ export default function UsersPage() {
                   <UserPlus className="h-6 w-6 text-purple-600" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">12</p>
+                  <p className="text-2xl font-bold">{users.filter(u => u.role.toLowerCase() !== 'admin').length}</p>
                   <p className="text-sm text-muted-foreground">
-                    {language === "en" ? "New This Month" : "ഈ മാസം പുതിയത്"}
+                    {language === "en" ? "Other Roles" : "മറ്റ് റോളുകൾ"}
                   </p>
                 </div>
               </div>
@@ -213,6 +190,13 @@ export default function UsersPage() {
 
         {/* Users List */}
         <div className="space-y-4">
+          {isLoading && (
+            <Card>
+              <CardContent className="p-6 text-center">
+                <p>{language === "en" ? "Loading users..." : "ഉപയോക്താക്കളെ ലോഡ് ചെയ്യുന്നു..."}</p>
+              </CardContent>
+            </Card>
+          )}
           {filteredUsers.map((user) => (
             <Card key={user.id}>
               <CardContent className="p-6">
@@ -227,30 +211,27 @@ export default function UsersPage() {
                       </AvatarFallback>
                     </Avatar>
                     <div>
-                      <h3 className="font-semibold">{user.name}</h3>
+                      <h3 className="font-semibold">{language === "ml" && user.malayalam_name ? user.malayalam_name : user.name}</h3>
                       <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
                         <div className="flex items-center gap-1">
                           <Mail className="h-3 w-3" />
                           <span>{user.email}</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                          <Phone className="h-3 w-3" />
-                          <span>{user.phone}</span>
-                        </div>
-                        <span>{user.department}</span>
+                        {user.phone && (
+                          <div className="flex items-center gap-1">
+                            <Phone className="h-3 w-3" />
+                            <span>{user.phone}</span>
+                          </div>
+                        )}
                       </div>
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {language === "en" ? "Last login:" : "അവസാന ലോഗിൻ:"}{" "}
-                        {new Date(user.last_login).toLocaleDateString()}
-                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Badge className={getRoleColor(user.role)} variant="secondary">
-                      {getRoleText(user.role)}
+                    <Badge className={getRoleColor(user.role.toLowerCase())} variant="secondary">
+                      {getRoleText(user.role.toLowerCase())}
                     </Badge>
-                    <Badge className={getStatusColor(user.status)} variant="secondary">
-                      {getStatusText(user.status)}
+                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" variant="secondary">
+                      {language === "en" ? "Active" : "സജീവം"}
                     </Badge>
                     <Button variant="ghost" size="sm">
                       <MoreVertical className="h-4 w-4" />
