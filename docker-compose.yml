@@ -8,7 +8,7 @@ services:
     environment:
       POSTGRES_DB: kmrl_documents
       POSTGRES_USER: kmrl_user
-      POSTGRES_PASSWORD: kmrl_password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kmrl_dev_password}
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts:/docker-entrypoint-initdb.d
@@ -36,10 +36,10 @@ services:
     container_name: kmrl-web
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://kmrl_user:kmrl_password@postgres:5432/kmrl_documents
+      - DATABASE_URL=postgresql://kmrl_user:${POSTGRES_PASSWORD:-kmrl_dev_password}@postgres:5432/kmrl_documents
       - REDIS_URL=redis://redis:6379
-      - NEXTAUTH_SECRET=your-secret-key-here
-      - NEXTAUTH_URL=http://localhost:3000
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-kmrl-dev-secret-change-in-production}
+      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
       - GOOGLE_VISION_API_KEY=${GOOGLE_VISION_API_KEY}
       - GOOGLE_TRANSLATE_API_KEY=${GOOGLE_TRANSLATE_API_KEY}
     ports:
@@ -59,7 +59,7 @@ services:
       dockerfile: Dockerfile
     container_name: kmrl-api
     environment:
-      - DATABASE_URL=postgresql://kmrl_user:kmrl_password@postgres:5432/kmrl_documents
+      - DATABASE_URL=postgresql://kmrl_user:${POSTGRES_PASSWORD:-kmrl_dev_password}@postgres:5432/kmrl_documents
       - REDIS_URL=redis://redis:6379
       - GOOGLE_VISION_API_KEY=${GOOGLE_VISION_API_KEY}
       - GOOGLE_TRANSLATE_API_KEY=${GOOGLE_TRANSLATE_API_KEY}

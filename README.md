@@ -2,7 +2,7 @@
 
 A comprehensive, bilingual (English/Malayalam) document management system for Kochi Metro Rail Limited (KMRL) with AI-powered features including OCR, summarization, translation, and intelligent routing.
 
-##Features
+## Features
 
 ### Core Functionality
 - **Universal Document Intake**: Email, WhatsApp, SharePoint, direct upload, mobile camera
@@ -85,7 +85,7 @@ cp .env.example .env
 3. Configure environment variables:
 \`\`\`env
 # Database
-DATABASE_URL=postgresql://kmrl_user:kmrl_password@localhost:5432/kmrl_documents
+DATABASE_URL=postgresql://kmrl_user:your_secure_password@localhost:5432/kmrl_documents
 
 # Redis
 REDIS_URL=redis://localhost:6379
